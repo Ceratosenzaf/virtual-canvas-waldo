@@ -3,8 +3,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+// display
 const int DISPLAY = 0;
 const float DISPLAY_RATIO = 0.08;
+const char TITLE[] = "Waldo?";
+
+// solution
+const int RES_X = 1585;
+const int RES_Y = 525;
+const int RES_PADDING_X = 30;
+const int RES_PADDING_Y = 50;
+const char RES_TITLE[] = "Waldo!";
 
 int print_error_and_return(char message[], SDL_Window* win) {
   printf("%s: %s\n", message, SDL_GetError());
@@ -16,6 +25,25 @@ int print_error_and_return(char message[], SDL_Window* win) {
 int linear_map(int val, int src_min, int src_max, int dst_min, int dst_max) {
   return (int)(dst_min + (float)(dst_max - dst_min) * (val - src_min) /
                              (src_max - src_min));
+}
+
+void highlight_result(SDL_Renderer* renderer, int x, int y) {
+  SDL_Rect highlight = {RES_X - RES_PADDING_X - x, RES_Y - RES_PADDING_Y - y,
+                        RES_PADDING_X * 2, RES_PADDING_Y * 2};
+
+  const int BORDER = 5;
+  SDL_Rect top = {highlight.x, highlight.y, highlight.w, BORDER};
+  SDL_Rect left = {highlight.x, highlight.y, BORDER, highlight.h};
+  SDL_Rect bottom = {highlight.x, highlight.y + highlight.h - BORDER,
+                     highlight.w, BORDER};
+  SDL_Rect right = {highlight.x + highlight.w - BORDER, highlight.y, BORDER,
+                    highlight.h};
+
+  SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
+  SDL_RenderFillRect(renderer, &top);
+  SDL_RenderFillRect(renderer, &left);
+  SDL_RenderFillRect(renderer, &bottom);
+  SDL_RenderFillRect(renderer, &right);
 }
 
 int main(int argc, char* argv[]) {
@@ -31,7 +59,7 @@ int main(int argc, char* argv[]) {
   int win_w = dm.w * DISPLAY_RATIO;
   int win_h = win_w;
   SDL_Window* win =
-      SDL_CreateWindow("Waldo?", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+      SDL_CreateWindow(TITLE, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
                        win_w, win_h, SDL_WINDOW_SHOWN);
   if (!win) {
     return print_error_and_return("Error opening window", NULL);
@@ -72,6 +100,7 @@ int main(int argc, char* argv[]) {
   float scale_x = (float)img_w / usable.w;
   float scale_y = (float)img_h / usable.h;
 
+  int found = 0;
   int running = 1;
   SDL_Event event;
   while (running) {
@@ -89,11 +118,26 @@ int main(int argc, char* argv[]) {
 
     SDL_RenderClear(renderer);
     SDL_RenderCopy(renderer, img, &shown_img, &full_img);
+    if (found) highlight_result(renderer, rel_x, rel_y);
     SDL_RenderPresent(renderer);
 
     while (SDL_PollEvent(&event)) {
       if (event.type == SDL_QUIT) {
         running = 0;
+      }
+
+      if (event.type == SDL_MOUSEBUTTONDOWN &&
+          event.button.button == SDL_BUTTON_LEFT) {
+        int clicked_x = event.button.x + rel_x;
+        int clicked_y = event.button.y + rel_y;
+
+        if (clicked_x >= RES_X - RES_PADDING_X &&
+            clicked_x <= RES_X + RES_PADDING_X &&
+            clicked_y >= RES_Y - RES_PADDING_Y &&
+            clicked_y <= RES_Y + RES_PADDING_Y) {
+          found = 1;
+          SDL_SetWindowTitle(win, RES_TITLE);
+        }
       }
     }
   }
