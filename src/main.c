@@ -76,7 +76,7 @@ int main(int argc, char* argv[]) {
     return print_error_and_return("Error reading renderer size", win);
   }
 
-  SDL_Texture* img = IMG_LoadTexture(renderer, "image.jpg");
+  SDL_Texture* img = IMG_LoadTexture(renderer, "assets/image.jpg");
   if (!img) {
     return print_error_and_return("Error loading image", win);
   }
